@@ -248,6 +248,12 @@ if [ "$SHOULD_CONFIG_GITHUB" = true ]; then
     fi
 fi
 
+# Save git configuration if found
+if [ -n "$GIT_USER_NAME" ] && [ -n "$GIT_USER_EMAIL" ]; then
+    update_env "GIT_USER_NAME" "$GIT_USER_NAME"
+    update_env "GIT_USER_EMAIL" "$GIT_USER_EMAIL"
+fi
+
 echo "✅ Configuration complete!"
 echo ""
 echo "Building and starting ClaudeBox..."
