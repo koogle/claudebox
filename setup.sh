@@ -191,31 +191,32 @@ if [ -f "$CLAUDE_CONFIG_FILE" ]; then
     fi
     
     # Extract OAuth config if present
-    if [ "$CLAUDE_HAS_OAUTH" = "yes" ]; then
-        # Extract the oauthAccount block as JSON
-        OAUTH_CONFIG=$(python3 -c "import json; data=json.load(open('$CLAUDE_CONFIG_FILE')); print(json.dumps(data.get('oauthAccount', {})))" 2>/dev/null || echo "{}")
-        # Save OAuth config to a temporary file
-        echo "$OAUTH_CONFIG" > ./claude-oauth-config.json
-        echo "   ✅ Using OAuth configuration"
-        
-        # Always extract customApiKeyResponses when using OAuth
-        CUSTOM_API_RESPONSES=$(python3 -c "import json; data=json.load(open('$CLAUDE_CONFIG_FILE')); print(json.dumps(data.get('customApiKeyResponses', {'approved': [], 'rejected': []})))" 2>/dev/null || echo '{"approved": [], "rejected": []}')
-        echo "$CUSTOM_API_RESPONSES" > ./claude-api-responses.json
-        echo "   ✅ Using API key responses configuration"
-    else
-        # Extract customApiKeyResponses even without OAuth if present
-        CUSTOM_API_RESPONSES=$(python3 -c "import json; data=json.load(open('$CLAUDE_CONFIG_FILE')); print(json.dumps(data.get('customApiKeyResponses', {})))" 2>/dev/null || echo "{}")
-        if [ "$CUSTOM_API_RESPONSES" != "{}" ]; then
-            echo "$CUSTOM_API_RESPONSES" > ./claude-api-responses.json
-            echo "   ✅ Using API key responses configuration"
-        fi
-    fi
+    # if [ "$CLAUDE_HAS_OAUTH" = "yes" ]; then
+    #     # Extract the oauthAccount block as JSON
+    #     OAUTH_CONFIG=$(python3 -c "import json; data=json.load(open('$CLAUDE_CONFIG_FILE')); print(json.dumps(data.get('oauthAccount', {})))" 2>/dev/null || echo "{}")
+    #     # Save OAuth config to a temporary file
+    #     echo "$OAUTH_CONFIG" > ./claude-oauth-config.json
+    #     echo "   ✅ Using OAuth configuration"
+    #     
+    #     # Always extract customApiKeyResponses when using OAuth
+    #     CUSTOM_API_RESPONSES=$(python3 -c "import json; data=json.load(open('$CLAUDE_CONFIG_FILE')); print(json.dumps(data.get('customApiKeyResponses', {'approved': [], 'rejected': []})))" 2>/dev/null || echo '{"approved": [], "rejected": []}')
+    #     echo "$CUSTOM_API_RESPONSES" > ./claude-api-responses.json
+    #     echo "   ✅ Using API key responses configuration"
+    # else
+    #     # Extract customApiKeyResponses even without OAuth if present
+    #     CUSTOM_API_RESPONSES=$(python3 -c "import json; data=json.load(open('$CLAUDE_CONFIG_FILE')); print(json.dumps(data.get('customApiKeyResponses', {})))" 2>/dev/null || echo "{}")
+    #     if [ "$CUSTOM_API_RESPONSES" != "{}" ]; then
+    #         echo "$CUSTOM_API_RESPONSES" > ./claude-api-responses.json
+    #         echo "   ✅ Using API key responses configuration"
+    #     fi
+    # fi
     
     echo ""
 fi
 
 # Check for Claude credentials file
 CLAUDE_CREDENTIALS_FILE="$HOME/.claude/.credentials.json"
+HAVE_CREDENTIALS=false
 if [ -f "$CLAUDE_CREDENTIALS_FILE" ]; then
     echo "🔑 Found Claude credentials at ~/.claude/.credentials.json"
     read -p "Copy credentials to container? (Y/n): " copy_credentials
@@ -223,16 +224,15 @@ if [ -f "$CLAUDE_CREDENTIALS_FILE" ]; then
     
     if [[ "$copy_credentials" =~ ^[Yy]?$ ]]; then
         cp "$CLAUDE_CREDENTIALS_FILE" ./claude-credentials.json
-        echo "✅ Credentials will be copied to container"
+        echo "✅ Credentials will be copied to container (no API key needed)"
+        HAVE_CREDENTIALS=true
     fi
 fi
 
-# Check if we need API key (not needed if we have OAuth)
+# Check if we need API key (not needed if we have credentials)
 NEED_API_KEY=true
-if [ -f "./claude-oauth-config.json" ]; then
-    # We have OAuth config, no API key needed
+if [ "$HAVE_CREDENTIALS" = true ]; then
     NEED_API_KEY=false
-    echo "✅ Using OAuth authentication (no API key needed)"
 fi
 
 if [ "$NEED_API_KEY" = true ]; then
