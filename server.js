@@ -20,6 +20,8 @@ app.use(express.static('public'));
 const CLAUDE_API_KEY = process.env.ANTHROPIC_API_KEY;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const WORKSPACE_DIR = '/workspace';
+const GIT_USER_NAME = process.env.GIT_USER_NAME || 'ClaudeBox';
+const GIT_USER_EMAIL = process.env.GIT_USER_EMAIL || 'claude@claudebox.local';
 
 // Initialize Claude Code terminal
 let claudeTerm = null;
@@ -39,13 +41,25 @@ async function setupEnvironment() {
     console.log('No workspace directory found');
   }
   
-  // Configure git with token if available
-  if (GITHUB_TOKEN && workspaceExists) {
-    console.log('Configuring git authentication...');
-    try {
+  // Configure git
+  console.log('Configuring git...');
+  try {
+    // Set git user config
+    await new Promise((resolve, reject) => {
+      spawn('git', ['config', '--global', 'user.email', 'claude@claudebox.local'])
+        .on('close', (code) => code === 0 ? resolve() : reject(new Error('Failed to configure git email')));
+    });
+    
+    await new Promise((resolve, reject) => {
+      spawn('git', ['config', '--global', 'user.name', 'Claude'])
+        .on('close', (code) => code === 0 ? resolve() : reject(new Error('Failed to configure git name')));
+    });
+    
+    // Configure git with token if available
+    if (GITHUB_TOKEN) {
       // Set up git credential helper
       await new Promise((resolve, reject) => {
-        spawn('git', ['config', '--global', 'credential.helper', 'store'], { cwd: WORKSPACE_DIR })
+        spawn('git', ['config', '--global', 'credential.helper', 'store'])
           .on('close', (code) => code === 0 ? resolve() : reject(new Error('Failed to configure git')));
       });
       
@@ -54,9 +68,9 @@ async function setupEnvironment() {
       fs.writeFileSync('/root/.git-credentials', credentialUrl, { mode: 0o600 });
       
       console.log('Git authentication configured');
-    } catch (error) {
-      console.error('Failed to configure git auth:', error);
     }
+  } catch (error) {
+    console.error('Failed to configure git:', error);
   }
   
   // Start Claude Code session
@@ -145,12 +159,73 @@ app.get('/status', (req, res) => {
   });
 });
 
+// Git stats endpoint
+app.get('/git/stats', async (req, res) => {
+  // Determine the correct working directory
+  let gitWorkDir = WORKSPACE_DIR;
+  try {
+    const files = fs.readdirSync(WORKSPACE_DIR);
+    if (files.length === 0) {
+      gitWorkDir = process.env.HOME;
+    }
+  } catch (error) {
+    gitWorkDir = process.env.HOME;
+  }
+  
+  try {
+    // Get git diff stats
+    const gitDiff = spawn('git', ['diff', '--shortstat'], { cwd: gitWorkDir });
+    let stats = '';
+    
+    gitDiff.stdout.on('data', (data) => { stats += data; });
+    
+    await new Promise((resolve) => {
+      gitDiff.on('close', resolve);
+    });
+    
+    // Parse stats (format: "X files changed, Y insertions(+), Z deletions(-)")
+    let filesChanged = 0, insertions = 0, deletions = 0;
+    
+    const match = stats.match(/(\d+) files? changed(?:, (\d+) insertions?\(\+\))?(?:, (\d+) deletions?\(-\))?/);
+    if (match) {
+      filesChanged = parseInt(match[1]) || 0;
+      insertions = parseInt(match[2]) || 0;
+      deletions = parseInt(match[3]) || 0;
+    }
+    
+    res.json({
+      filesChanged,
+      insertions,
+      deletions,
+      summary: stats.trim() || 'No changes'
+    });
+  } catch (error) {
+    res.json({
+      filesChanged: 0,
+      insertions: 0,
+      deletions: 0,
+      summary: 'No git repository'
+    });
+  }
+});
+
 app.post('/git/:command', express.json(), async (req, res) => {
   const { command } = req.params;
   const validCommands = ['commit', 'push', 'pull', 'revert'];
   
   if (!validCommands.includes(command)) {
     return res.status(400).json({ error: 'Invalid git command' });
+  }
+  
+  // Determine the correct working directory
+  let gitWorkDir = WORKSPACE_DIR;
+  try {
+    const files = fs.readdirSync(WORKSPACE_DIR);
+    if (files.length === 0) {
+      gitWorkDir = process.env.HOME;
+    }
+  } catch (error) {
+    gitWorkDir = process.env.HOME;
   }
   
   try {
@@ -160,7 +235,8 @@ app.post('/git/:command', express.json(), async (req, res) => {
       case 'commit':
         const { message } = req.body;
         if (!message) return res.status(400).json({ error: 'Commit message required' });
-        gitArgs.push('commit', '-m', message);
+        gitArgs.push('add', '-A');
+        gitArgs.push('&&', 'git', 'commit', '-m', message);
         break;
       case 'push':
         gitArgs.push('push');
@@ -169,11 +245,24 @@ app.post('/git/:command', express.json(), async (req, res) => {
         gitArgs.push('pull');
         break;
       case 'revert':
-        gitArgs.push('revert', 'HEAD');
+        gitArgs.push('revert', 'HEAD', '--no-edit');
         break;
     }
     
-    const git = spawn('git', gitArgs, { cwd: WORKSPACE_DIR });
+    // For commit, we need to run two commands
+    if (command === 'commit') {
+      const { message } = req.body;
+      // First add all files
+      const addCmd = spawn('git', ['add', '-A'], { cwd: gitWorkDir });
+      await new Promise((resolve) => {
+        addCmd.on('close', resolve);
+      });
+      // Then commit
+      gitArgs.length = 0;
+      gitArgs.push('commit', '-m', message);
+    }
+    
+    const git = spawn('git', gitArgs, { cwd: gitWorkDir });
     let output = '';
     
     git.stdout.on('data', (data) => { output += data; });

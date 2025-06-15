@@ -88,6 +88,28 @@
       border-radius: 4px;
       border: 1px solid #444;
       height: 600px;
+      position: relative;
+    }
+    
+    .git-stats {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background: rgba(30, 30, 30, 0.9);
+      padding: 5px 10px;
+      border-radius: 4px;
+      border: 1px solid #444;
+      font-size: 12px;
+      font-family: monospace;
+      z-index: 10;
+    }
+    
+    .git-stats .added {
+      color: #4caf50;
+    }
+    
+    .git-stats .removed {
+      color: #f44336;
     }
     
     .message {
@@ -137,7 +159,9 @@
       <button id="clear-terminal">Clear Terminal</button>
     </div>
     
-    <div id="terminal-container"></div>
+    <div id="terminal-container">
+      <div class="git-stats" id="git-stats"></div>
+    </div>
   </div>
   
   <div class="message" id="message"></div>
@@ -220,6 +244,27 @@
       }
     }
     
+    // Fetch git stats
+    async function updateGitStats() {
+      try {
+        const response = await fetch('/git/stats');
+        const stats = await response.json();
+        
+        const gitStatsEl = document.getElementById('git-stats');
+        if (stats.filesChanged > 0 || stats.insertions > 0 || stats.deletions > 0) {
+          gitStatsEl.innerHTML = `
+            <span class="added">+${stats.insertions}</span> / 
+            <span class="removed">-${stats.deletions}</span>
+          `;
+          gitStatsEl.style.display = 'block';
+        } else {
+          gitStatsEl.style.display = 'none';
+        }
+      } catch (error) {
+        console.error('Failed to fetch git stats:', error);
+      }
+    }
+    
     // Show message
     function showMessage(text, type = 'info') {
       const messageEl = document.getElementById('message');
@@ -282,7 +327,9 @@
     // Initialize
     connectWebSocket();
     updateStatus();
+    updateGitStats();
     setInterval(updateStatus, 5000);
+    setInterval(updateGitStats, 5000);
   </script>
 </body>
 </html>
