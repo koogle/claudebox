@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  claudebox:
+    build: .
+    ports:
+      - "3000:3000"  # HTTP server
+      - "3001:3001"  # WebSocket terminal
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GITHUB_SSH_KEY=${GITHUB_SSH_KEY}
+      - REPO_URL=${REPO_URL}
+    volumes:
+      # Mount workspace for persistence during development
+      - ./workspace:/workspace
+      # Mount SSH keys if needed
+      - ~/.ssh:/root/.ssh:ro
+    stdin_open: true
+    tty: true
