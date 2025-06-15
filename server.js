@@ -72,10 +72,39 @@ async function setupEnvironment() {
   });
   
   // Handle Claude process events
-  claudeTerm.onExit((e) => {
+  claudeTerm.onExit(async (e) => {
     console.log(`Claude process exited with code ${e.exitCode}`);
     claudeTerm = null;
     terminalBuffer = ''; // Clear buffer when process exits
+    
+    // Notify connected clients
+    wss.clients.forEach((client) => {
+      if (client.readyState === 1) {
+        client.send('\r\n[Claude process exited. Restarting...]\r\n');
+      }
+    });
+    
+    // Auto-restart after a short delay
+    setTimeout(async () => {
+      console.log('Restarting Claude process...');
+      try {
+        await setupEnvironment();
+        
+        // Notify clients of successful restart
+        wss.clients.forEach((client) => {
+          if (client.readyState === 1) {
+            client.send('[Claude process restarted successfully]\r\n');
+          }
+        });
+      } catch (error) {
+        console.error('Failed to restart Claude:', error);
+        wss.clients.forEach((client) => {
+          if (client.readyState === 1) {
+            client.send(`[Failed to restart Claude: ${error.message}]\r\n`);
+          }
+        });
+      }
+    }, 2000); // 2 second delay before restart
   });
   
   claudeTerm.onData((data) => {
