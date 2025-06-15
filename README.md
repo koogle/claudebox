@@ -1,6 +1,6 @@
 # ClaudeBox
 
-A containerized Claude Code environment with web-based terminal streaming.
+Run Claude code in a container and within a repo to make it easy to develop on the go. Have fun.
 
 <img width="1457" alt="Screenshot 2025-06-14 at 11 36 07 PM" src="https://github.com/user-attachments/assets/21a8dacf-4574-434e-964a-f4d42db870ed" />
 
@@ -28,50 +28,17 @@ A containerized Claude Code environment with web-based terminal streaming.
 
 - Live terminal streaming using xterm.js and WebSockets
 - Claude Code pre-installed and configured
-- Automatic Claude process restart on exit
-- Full terminal output buffering and replay for new connections
 - Git operations (commit, push, pull, revert) via web UI
-- Auto-clone repository on startup (optional)
-- GitHub Personal Access Token support for secure operations
-- Real-time status indicators for API key, repository, and connection
-- Native node-pty compilation for optimal performance
 
-## GitHub Setup
-
-### Creating a Personal Access Token
-
-1. Go to GitHub Settings → [Personal Access Tokens](https://github.com/settings/tokens)
-2. Click "Generate new token (classic)"
-3. Give your token a descriptive name (e.g., "ClaudeBox")
-4. Select expiration (recommend 90 days for security)
-5. Select scopes:
-   - **`repo`** - Full control of private repositories (required for private repos)
-   - **`public_repo`** - Access public repositories (if only using public repos)
-6. Click "Generate token"
-7. **Copy the token immediately** (starts with `ghp_`)
-
-### Token Security Best Practices
-
-- Use tokens instead of SSH keys for better security
-- Set expiration dates on tokens
-- Use minimum required scopes
-- Revoke tokens when no longer needed
-- Never commit tokens to version control
-
-## Authentication
-
-### Claude Authentication
+## Claude Auth
 
 ClaudeBox supports two authentication methods:
 
 **macOS (Keychain Integration)**
 - Automatically detects Claude credentials stored in macOS keychain
-- Looks for service: `Claude Code-.credentials` 
-- No manual file copying required
 
 **Linux/Other Platforms**
 - Uses credentials file at `~/.claude/.credentials.json`
-- Automatically copied to container during build
 
 **API Key Fallback**
 - If no credentials found, prompts for `ANTHROPIC_API_KEY`
@@ -92,16 +59,12 @@ ClaudeBox supports two authentication methods:
   - When both are set, enables HTTP basic auth for the web interface
   - Useful for securing public deployments
 
-## Architecture
+## Arch
 
 - **Backend**: Node.js + Express + node-pty
 - **Terminal**: xterm.js + WebSocket streaming
-- **Container**: Docker with pnpm package manager
-- **Port**: 3000 (HTTP + WebSocket on same port)
-- **Process Management**: Automatic Claude process restart on exit
-- **Build Tools**: Includes Python 3, make, and build-essential for native modules
 
-## Commands
+## Setup
 
 ```bash
 # Initial setup (interactive)
@@ -124,35 +87,4 @@ docker-compose down
 
 # Rebuild after changes
 docker-compose up --build
-```
-
-## Example Configurations
-
-### With Claude Credentials (Recommended)
-```env
-USE_CLAUDE_CREDENTIALS=true
-REPO_URL=https://github.com/facebook/react.git
-# No ANTHROPIC_API_KEY needed when using credentials
-```
-
-### API Key Fallback
-```env
-ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxx
-REPO_URL=https://github.com/facebook/react.git
-```
-
-### Private Repository with Push Access
-```env
-USE_CLAUDE_CREDENTIALS=true
-REPO_URL=https://github.com/mycompany/private-repo.git
-GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
-```
-
-### Secured Deployment with Basic Auth
-```env
-USE_CLAUDE_CREDENTIALS=true
-REPO_URL=https://github.com/mycompany/private-repo.git
-GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
-BASIC_AUTH_USER=admin
-BASIC_AUTH_PASS=secure-password-123
 ```
