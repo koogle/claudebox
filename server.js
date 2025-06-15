@@ -12,6 +12,20 @@ const app = express();
 const PORT = 3000;
 const WS_PORT = 3001;
 
+// WebSocket URL discovery - can be overridden via environment variable
+const getWebSocketUrl = (req) => {
+  if (process.env.WEBSOCKET_URL) {
+    return process.env.WEBSOCKET_URL;
+  }
+  
+  // Auto-discover from request host
+  const host = req.get('host') || `localhost:${PORT}`;
+  const protocol = req.secure || req.get('x-forwarded-proto') === 'https' ? 'wss' : 'ws';
+  const wsHost = host.replace(`:${PORT}`, `:${WS_PORT}`);
+  
+  return `${protocol}://${wsHost}`;
+};
+
 // Middleware
 app.use(express.json());
 app.use(express.static('public'));
@@ -158,7 +172,8 @@ app.get('/status', (req, res) => {
     ready: claudeTerm !== null,
     hasApiKey: !!CLAUDE_API_KEY,
     hasRepo: hasRepo,
-    workspace: hasRepo ? WORKSPACE_DIR : process.env.HOME
+    workspace: hasRepo ? WORKSPACE_DIR : process.env.HOME,
+    websocketUrl: getWebSocketUrl(req)
   });
 });
 

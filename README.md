@@ -81,6 +81,8 @@ ClaudeBox supports two authentication methods:
 
 - `USE_CLAUDE_CREDENTIALS` - Set to "true" to use credentials file/keychain (auto-configured)
 - `ANTHROPIC_API_KEY` - Your Anthropic API key (fallback if no credentials)
+- `WEBSOCKET_URL` - Override WebSocket URL (optional, auto-discovered from host)
+  - Example: `wss://mydomain.com:3001` for HTTPS deployments
 - `REPO_URL` - Git repository to clone on startup (optional)
   - Use HTTPS format: `https://github.com/username/repo.git`
 - `GITHUB_TOKEN` - GitHub Personal Access Token (optional)

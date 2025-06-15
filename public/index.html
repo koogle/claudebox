@@ -187,9 +187,22 @@
     
     // WebSocket connection
     let ws = null;
+    let websocketUrl = null;
     
-    function connectWebSocket() {
-      ws = new WebSocket('ws://localhost:3001');
+    async function connectWebSocket() {
+      // Get WebSocket URL from server if not already fetched
+      if (!websocketUrl) {
+        try {
+          const response = await fetch('/status');
+          const status = await response.json();
+          websocketUrl = status.websocketUrl;
+        } catch (error) {
+          console.error('Failed to fetch WebSocket URL:', error);
+          websocketUrl = 'ws://localhost:3001'; // fallback
+        }
+      }
+      
+      ws = new WebSocket(websocketUrl);
       
       ws.onopen = () => {
         console.log('Connected to terminal');
