@@ -39,12 +39,6 @@
       height: 40px;
     }
     
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    
     .arrow-controls {
       display: flex;
       gap: 4px;
@@ -104,7 +98,7 @@
       background: #4ec9b0;
     }
     
-    /* Floating controls */
+    /* Combined floating controls */
     .controls {
       position: fixed;
       top: 50px;
@@ -112,13 +106,28 @@
       right: 0;
       z-index: 99;
       display: flex;
-      gap: 4px;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
       padding: 8px 12px;
       background: rgba(30, 30, 30, 0.9);
       backdrop-filter: blur(10px);
       border-bottom: 1px solid #444;
       overflow-x: auto;
       white-space: nowrap;
+    }
+    
+    .git-controls {
+      display: flex;
+      gap: 4px;
+      flex: 1;
+      overflow-x: auto;
+    }
+    
+    .controls .arrow-controls {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
     }
     
     button {
@@ -219,10 +228,6 @@
         display: none; /* Hide status labels on mobile */
       }
       
-      .header-right {
-        gap: 8px;
-      }
-      
       .arrow-btn {
         width: 20px;
         height: 20px;
@@ -258,8 +263,8 @@
         gap: 3px;
       }
       
-      .header-right {
-        gap: 6px;
+      .git-controls {
+        gap: 3px;
       }
       
       .arrow-btn {
@@ -283,34 +288,34 @@
   <div class="container">
     <header>
       <h1>Claude Code Terminal</h1>
-      <div class="header-right">
-        <div class="status">
-          <div class="status-item">
-            <div class="status-indicator" id="api-status"></div>
-            <span>API Key</span>
-          </div>
-          <div class="status-item">
-            <div class="status-indicator" id="repo-status"></div>
-            <span>Repository</span>
-          </div>
-          <div class="status-item">
-            <div class="status-indicator" id="ws-status"></div>
-            <span>Connection</span>
-          </div>
+      <div class="status">
+        <div class="status-item">
+          <div class="status-indicator" id="api-status"></div>
+          <span>API Key</span>
         </div>
-        <div class="arrow-controls">
-          <button class="arrow-btn" id="arrow-up">↑</button>
-          <button class="arrow-btn" id="arrow-down">↓</button>
+        <div class="status-item">
+          <div class="status-indicator" id="repo-status"></div>
+          <span>Repository</span>
+        </div>
+        <div class="status-item">
+          <div class="status-indicator" id="ws-status"></div>
+          <span>Connection</span>
         </div>
       </div>
     </header>
     
     <div class="controls">
-      <button id="git-commit">Git Commit</button>
-      <button id="git-push">Git Push</button>
-      <button id="git-pull">Git Pull</button>
-      <button id="git-revert">Git Reset</button>
-      <button id="clear-terminal">Clear Terminal</button>
+      <div class="git-controls">
+        <button id="git-commit">Git Commit</button>
+        <button id="git-push">Git Push</button>
+        <button id="git-pull">Git Pull</button>
+        <button id="git-revert">Git Reset</button>
+        <button id="clear-terminal">Clear Terminal</button>
+      </div>
+      <div class="arrow-controls">
+        <button class="arrow-btn" id="arrow-up">↑</button>
+        <button class="arrow-btn" id="arrow-down">↓</button>
+      </div>
     </div>
     
     <div id="terminal-container">
