@@ -27,13 +27,39 @@ A containerized Claude Code environment with web-based terminal streaming.
 - Claude Code pre-installed and configured
 - Git operations (commit, push, pull, revert) via web UI
 - Auto-clone repository on startup (optional)
-- SSH key support for private repos
+- GitHub Personal Access Token support for secure operations
+
+## GitHub Setup
+
+### Creating a Personal Access Token
+
+1. Go to GitHub Settings → [Personal Access Tokens](https://github.com/settings/tokens)
+2. Click "Generate new token (classic)"
+3. Give your token a descriptive name (e.g., "ClaudeBox")
+4. Select expiration (recommend 90 days for security)
+5. Select scopes:
+   - **`repo`** - Full control of private repositories (required for private repos)
+   - **`public_repo`** - Access public repositories (if only using public repos)
+6. Click "Generate token"
+7. **Copy the token immediately** (starts with `ghp_`)
+
+### Token Security Best Practices
+
+- Use tokens instead of SSH keys for better security
+- Set expiration dates on tokens
+- Use minimum required scopes
+- Revoke tokens when no longer needed
+- Never commit tokens to version control
 
 ## Environment Variables
 
 - `ANTHROPIC_API_KEY` - Your Anthropic API key (required)
 - `REPO_URL` - Git repository to clone on startup (optional)
-- `GITHUB_SSH_KEY` - SSH private key for GitHub access (optional)
+  - Use HTTPS format: `https://github.com/username/repo.git`
+- `GITHUB_TOKEN` - GitHub Personal Access Token (optional)
+  - Required for private repositories
+  - Enables push/pull operations
+  - Format: `ghp_xxxxxxxxxxxxxxxxxxxx`
 
 ## Architecture
 
@@ -45,6 +71,15 @@ A containerized Claude Code environment with web-based terminal streaming.
 ## Commands
 
 ```bash
+# Initial setup (interactive)
+./setup.sh
+
+# Force reconfigure all settings
+./setup.sh --force
+
+# Skip Docker checks (for custom Docker setups)
+./setup.sh --skip-docker-check
+
 # Start container
 docker-compose up -d
 
@@ -56,4 +91,20 @@ docker-compose down
 
 # Rebuild after changes
 docker-compose up --build
+```
+
+## Example Configurations
+
+### Public Repository (Read-Only)
+```env
+ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxx
+REPO_URL=https://github.com/facebook/react.git
+# No GITHUB_TOKEN needed for public repos
+```
+
+### Private Repository with Push Access
+```env
+ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxx
+REPO_URL=https://github.com/mycompany/private-repo.git
+GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
 ```
