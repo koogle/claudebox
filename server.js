@@ -15,8 +15,36 @@ const PORT = 3000;
 // Create HTTP server
 const server = http.createServer(app);
 
+// Basic auth configuration
+const BASIC_AUTH_USER = process.env.BASIC_AUTH_USER;
+const BASIC_AUTH_PASS = process.env.BASIC_AUTH_PASS;
+
+// Basic auth middleware
+const basicAuth = (req, res, next) => {
+  if (!BASIC_AUTH_USER || !BASIC_AUTH_PASS) {
+    return next(); // Skip auth if not configured
+  }
+
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith('Basic ')) {
+    res.set('WWW-Authenticate', 'Basic realm="ClaudeBox"');
+    return res.status(401).send('Authentication required');
+  }
+
+  const credentials = Buffer.from(auth.slice(6), 'base64').toString('utf-8');
+  const [username, password] = credentials.split(':');
+
+  if (username === BASIC_AUTH_USER && password === BASIC_AUTH_PASS) {
+    return next();
+  }
+
+  res.set('WWW-Authenticate', 'Basic realm="ClaudeBox"');
+  return res.status(401).send('Invalid credentials');
+};
+
 // Middleware
 app.use(express.json());
+app.use(basicAuth); // Apply basic auth to all routes
 app.use(express.static('public'));
 
 // Environment setup

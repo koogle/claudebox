@@ -26,11 +26,15 @@ RUN pnpm add -g @anthropic-ai/claude-code
 ARG REPO_URL
 ARG GITHUB_TOKEN
 ARG USE_CLAUDE_CREDENTIALS=false
+ARG BASIC_AUTH_USER
+ARG BASIC_AUTH_PASS
 
 # Environment variables
 # USE_CLAUDE_CREDENTIALS: Set to "true" to use claude-credentials.json file
 # ANTHROPIC_API_KEY: API key for Claude
 # GITHUB_TOKEN: GitHub token for git operations
+# BASIC_AUTH_USER: Username for basic authentication (optional)
+# BASIC_AUTH_PASS: Password for basic authentication (optional)
 
 # Create workspace directory
 RUN mkdir -p /workspace
@@ -72,6 +76,10 @@ COPY . .
 # Copy Claude credentials file if USE_CLAUDE_CREDENTIALS is true
 # This requires the file to be manually copied to build context first
 COPY claude-credentials.json* /app/
+
+# Set build-time environment variables for runtime
+ENV BASIC_AUTH_USER=${BASIC_AUTH_USER}
+ENV BASIC_AUTH_PASS=${BASIC_AUTH_PASS}
 
 # Make setup script executable and run Claude configuration setup
 RUN chmod +x /app/setup-claude-config.sh && \

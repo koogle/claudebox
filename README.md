@@ -87,6 +87,10 @@ ClaudeBox supports two authentication methods:
   - Required for private repositories
   - Enables push/pull operations
   - Format: `ghp_xxxxxxxxxxxxxxxxxxxx`
+- `BASIC_AUTH_USER` - Username for basic authentication (optional)
+- `BASIC_AUTH_PASS` - Password for basic authentication (optional)
+  - When both are set, enables HTTP basic auth for the web interface
+  - Useful for securing public deployments
 
 ## Architecture
 

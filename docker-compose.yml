@@ -6,6 +6,8 @@ services:
         - REPO_URL=${REPO_URL}
         - GITHUB_TOKEN=${GITHUB_TOKEN}
         - USE_CLAUDE_CREDENTIALS=${USE_CLAUDE_CREDENTIALS}
+        - BASIC_AUTH_USER=${BASIC_AUTH_USER}
+        - BASIC_AUTH_PASS=${BASIC_AUTH_PASS}
     ports:
       - "3000:3000"  # HTTP + WebSocket server
     environment:
