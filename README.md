@@ -147,3 +147,12 @@ USE_CLAUDE_CREDENTIALS=true
 REPO_URL=https://github.com/mycompany/private-repo.git
 GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
 ```
+
+### Secured Deployment with Basic Auth
+```env
+USE_CLAUDE_CREDENTIALS=true
+REPO_URL=https://github.com/mycompany/private-repo.git
+GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
+BASIC_AUTH_USER=admin
+BASIC_AUTH_PASS=secure-password-123
+```
