@@ -81,8 +81,6 @@ ClaudeBox supports two authentication methods:
 
 - `USE_CLAUDE_CREDENTIALS` - Set to "true" to use credentials file/keychain (auto-configured)
 - `ANTHROPIC_API_KEY` - Your Anthropic API key (fallback if no credentials)
-- `WEBSOCKET_URL` - Override WebSocket URL (optional, auto-discovered from host)
-  - Example: `wss://mydomain.com:3001` for HTTPS deployments
 - `REPO_URL` - Git repository to clone on startup (optional)
   - Use HTTPS format: `https://github.com/username/repo.git`
 - `GITHUB_TOKEN` - GitHub Personal Access Token (optional)
@@ -95,7 +93,7 @@ ClaudeBox supports two authentication methods:
 - **Backend**: Node.js + Express + node-pty
 - **Terminal**: xterm.js + WebSocket streaming
 - **Container**: Docker with pnpm package manager
-- **Ports**: 3000 (HTTP), 3001 (WebSocket)
+- **Port**: 3000 (HTTP + WebSocket on same port)
 - **Process Management**: Automatic Claude process restart on exit
 - **Build Tools**: Includes Python 3, make, and build-essential for native modules
 

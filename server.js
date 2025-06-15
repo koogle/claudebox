@@ -5,26 +5,15 @@ import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import http from 'http';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 const PORT = 3000;
-const WS_PORT = 3001;
 
-// WebSocket URL discovery - can be overridden via environment variable
-const getWebSocketUrl = (req) => {
-  if (process.env.WEBSOCKET_URL) {
-    return process.env.WEBSOCKET_URL;
-  }
-  
-  // Auto-discover from request host
-  const host = req.get('host') || `localhost:${PORT}`;
-  const protocol = req.secure || req.get('x-forwarded-proto') === 'https' ? 'wss' : 'ws';
-  const wsHost = host.replace(`:${PORT}`, `:${WS_PORT}`);
-  
-  return `${protocol}://${wsHost}`;
-};
+// Create HTTP server
+const server = http.createServer(app);
 
 // Middleware
 app.use(express.json());
@@ -172,8 +161,7 @@ app.get('/status', (req, res) => {
     ready: claudeTerm !== null,
     hasApiKey: !!CLAUDE_API_KEY,
     hasRepo: hasRepo,
-    workspace: hasRepo ? WORKSPACE_DIR : process.env.HOME,
-    websocketUrl: getWebSocketUrl(req)
+    workspace: hasRepo ? WORKSPACE_DIR : process.env.HOME
   });
 });
 
@@ -393,8 +381,8 @@ app.post('/git/:command', express.json(), async (req, res) => {
 // Terminal output buffer to store all output
 let terminalBuffer = '';
 
-// WebSocket server for terminal
-const wss = new WebSocketServer({ port: WS_PORT });
+// WebSocket server for terminal - attach to the same HTTP server
+const wss = new WebSocketServer({ server });
 
 wss.on('connection', (ws) => {
   console.log('Terminal WebSocket connected');
@@ -428,10 +416,9 @@ wss.on('connection', (ws) => {
   });
 });
 
-// Start servers
-app.listen(PORT, async () => {
-  console.log(`HTTP server running on port ${PORT}`);
-  console.log(`WebSocket server running on port ${WS_PORT}`);
+// Start server
+server.listen(PORT, '0.0.0.0', async () => {
+  console.log(`HTTP + WebSocket server running on port ${PORT}`);
   
   try {
     await setupEnvironment();

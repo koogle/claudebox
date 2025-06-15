@@ -78,7 +78,7 @@ RUN chmod +x /app/setup-claude-config.sh && \
     /app/setup-claude-config.sh && \
     rm -f /app/claude-credentials.json
 
-# Expose HTTP port for web server and WebSocket port for terminal
-EXPOSE 3000 3001
+# Expose port for HTTP + WebSocket server
+EXPOSE 3000
 
 CMD ["node", "server.js"]

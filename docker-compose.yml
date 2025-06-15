@@ -7,8 +7,7 @@ services:
         - GITHUB_TOKEN=${GITHUB_TOKEN}
         - USE_CLAUDE_CREDENTIALS=${USE_CLAUDE_CREDENTIALS}
     ports:
-      - "3000:3000"  # HTTP server
-      - "3001:3001"  # WebSocket terminal
+      - "3000:3000"  # HTTP + WebSocket server
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - GITHUB_TOKEN=${GITHUB_TOKEN}
