@@ -4,6 +4,7 @@ import pty from 'node-pty';
 import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -59,8 +60,7 @@ async function setupEnvironment() {
   }
   
   // Start Claude Code session
-  const shell = process.platform === 'win32' ? 'powershell.exe' : 'bash';
-  claudeTerm = pty.spawn(shell, [], {
+  claudeTerm = pty.spawn('claude', [], {
     name: 'xterm-color',
     cols: 80,
     rows: 24,
@@ -71,13 +71,34 @@ async function setupEnvironment() {
     }
   });
   
+  // Handle Claude process events
+  claudeTerm.onExit((e) => {
+    console.log(`Claude process exited with code ${e.exitCode}`);
+    claudeTerm = null;
+    terminalBuffer = ''; // Clear buffer when process exits
+  });
+  
+  claudeTerm.onData((data) => {
+    // Log Claude output for debugging
+    process.stdout.write(data);
+    
+    // Add to buffer
+    terminalBuffer += data;
+    
+    // Broadcast to all connected WebSocket clients
+    wss.clients.forEach((client) => {
+      if (client.readyState === 1) { // WebSocket.OPEN
+        client.send(data);
+      }
+    });
+  });
+  
   console.log('Environment setup complete');
   console.log(`Working directory: ${workspaceExists ? WORKSPACE_DIR : process.env.HOME}`);
 }
 
 // API Routes
 app.get('/status', (req, res) => {
-  const fs = require('fs');
   let hasRepo = false;
   
   try {
@@ -141,6 +162,9 @@ app.post('/git/:command', express.json(), async (req, res) => {
   }
 });
 
+// Terminal output buffer to store all output
+let terminalBuffer = '';
+
 // WebSocket server for terminal
 const wss = new WebSocketServer({ port: WS_PORT });
 
@@ -153,17 +177,12 @@ wss.on('connection', (ws) => {
     return;
   }
   
-  // Forward terminal output to browser
-  const onData = claudeTerm.onData((data) => {
-    ws.send(data);
-  });
+  // Send buffered output to new connection
+  if (terminalBuffer.length > 0) {
+    ws.send(terminalBuffer);
+  }
   
-  // Forward browser input to terminal
-  ws.on('message', (data) => {
-    claudeTerm.write(data.toString());
-  });
-  
-  // Handle resize
+  // Handle messages from browser
   ws.on('message', (data) => {
     try {
       const msg = JSON.parse(data.toString());
@@ -178,7 +197,6 @@ wss.on('connection', (ws) => {
   
   ws.on('close', () => {
     console.log('Terminal WebSocket disconnected');
-    onData.dispose();
   });
 });
 

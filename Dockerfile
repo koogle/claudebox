@@ -1,9 +1,12 @@
 FROM node:20-slim
 
-# Install git, ssh, and pnpm
+# Install git, ssh, build tools, and pnpm
 RUN apt-get update && apt-get install -y \
     git \
     openssh-client \
+    make \
+    python3 \
+    build-essential \
     && rm -rf /var/lib/apt/lists/* \
     && corepack enable \
     && corepack prepare pnpm@latest --activate
@@ -43,6 +46,11 @@ WORKDIR /app
 # Copy package files first for better caching
 COPY package*.json pnpm-lock.yaml* ./
 RUN pnpm install
+
+# Build node-pty native modules
+RUN cd node_modules/node-pty && \
+    npm install && \
+    npm run build
 
 # Copy application files
 COPY . .
