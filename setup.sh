@@ -197,12 +197,24 @@ fi
 # Check for Claude credentials file
 CLAUDE_CREDENTIALS_FILE="$HOME/.claude/.credentials.json"
 HAVE_CREDENTIALS=false
+
 if [ -f "$CLAUDE_CREDENTIALS_FILE" ]; then
     echo "🔑 Found Claude credentials at ~/.claude/.credentials.json"
-    read -p "Copy credentials to container? (Y/n): " copy_credentials
-    echo ""
     
-    if [[ "$copy_credentials" =~ ^[Yy]?$ ]]; then
+    # Check if USE_CLAUDE_CREDENTIALS is already set
+    if ! grep -q "^USE_CLAUDE_CREDENTIALS=" .env; then
+        read -p "Copy credentials to container? (Y/n): " copy_credentials
+        echo ""
+        
+        if [[ "$copy_credentials" =~ ^[Yy]?$ ]]; then
+            update_env "USE_CLAUDE_CREDENTIALS" "true"
+        else
+            update_env "USE_CLAUDE_CREDENTIALS" "false"
+        fi
+    fi
+    
+    # Check env var and copy if set to true
+    if grep -q "^USE_CLAUDE_CREDENTIALS=true" .env; then
         cp "$CLAUDE_CREDENTIALS_FILE" ./claude-credentials.json
         echo "✅ Credentials will be copied to container (no API key needed)"
         HAVE_CREDENTIALS=true

@@ -73,14 +73,12 @@ COPY . .
 # This requires the file to be manually copied to build context first
 COPY claude-credentials.json* /app/
 
-# Make setup script executable and clean up credentials file from app directory after setup
+# Make setup script executable and run Claude configuration setup
 RUN chmod +x /app/setup-claude-config.sh && \
-    if [ "$USE_CLAUDE_CREDENTIALS" = "true" ] && [ -f "/app/claude-credentials.json" ]; then \
-        echo "Credentials file will be used during setup, then cleaned up"; \
-    fi
+    /app/setup-claude-config.sh && \
+    rm -f /app/claude-credentials.json
 
 # Expose HTTP port for web server and WebSocket port for terminal
 EXPOSE 3000 3001
 
-# Run setup script before starting server
-CMD ["/bin/sh", "-c", "/app/setup-claude-config.sh && node server.js"]
+CMD ["node", "server.js"]

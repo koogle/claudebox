@@ -5,6 +5,7 @@ services:
       args:
         - REPO_URL=${REPO_URL}
         - GITHUB_TOKEN=${GITHUB_TOKEN}
+        - USE_CLAUDE_CREDENTIALS=${USE_CLAUDE_CREDENTIALS}
     ports:
       - "3000:3000"  # HTTP server
       - "3001:3001"  # WebSocket terminal
