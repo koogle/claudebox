@@ -39,6 +39,42 @@
       height: 40px;
     }
     
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .arrow-controls {
+      display: flex;
+      gap: 4px;
+    }
+    
+    .arrow-btn {
+      background: #333;
+      color: #d4d4d4;
+      border: 1px solid #555;
+      padding: 4px 8px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background 0.2s;
+      line-height: 1;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .arrow-btn:hover {
+      background: #444;
+    }
+    
+    .arrow-btn:active {
+      background: #555;
+    }
+    
     h1 {
       margin: 0;
       font-size: 16px;
@@ -183,6 +219,16 @@
         display: none; /* Hide status labels on mobile */
       }
       
+      .header-right {
+        gap: 8px;
+      }
+      
+      .arrow-btn {
+        width: 20px;
+        height: 20px;
+        font-size: 10px;
+      }
+      
       button {
         padding: 5px 8px;
         font-size: 10px;
@@ -212,6 +258,16 @@
         gap: 3px;
       }
       
+      .header-right {
+        gap: 6px;
+      }
+      
+      .arrow-btn {
+        width: 18px;
+        height: 18px;
+        font-size: 9px;
+      }
+      
       button {
         padding: 4px 6px;
         font-size: 9px;
@@ -227,18 +283,24 @@
   <div class="container">
     <header>
       <h1>Claude Code Terminal</h1>
-      <div class="status">
-        <div class="status-item">
-          <div class="status-indicator" id="api-status"></div>
-          <span>API Key</span>
+      <div class="header-right">
+        <div class="status">
+          <div class="status-item">
+            <div class="status-indicator" id="api-status"></div>
+            <span>API Key</span>
+          </div>
+          <div class="status-item">
+            <div class="status-indicator" id="repo-status"></div>
+            <span>Repository</span>
+          </div>
+          <div class="status-item">
+            <div class="status-indicator" id="ws-status"></div>
+            <span>Connection</span>
+          </div>
         </div>
-        <div class="status-item">
-          <div class="status-indicator" id="repo-status"></div>
-          <span>Repository</span>
-        </div>
-        <div class="status-item">
-          <div class="status-indicator" id="ws-status"></div>
-          <span>Connection</span>
+        <div class="arrow-controls">
+          <button class="arrow-btn" id="arrow-up">↑</button>
+          <button class="arrow-btn" id="arrow-down">↓</button>
         </div>
       </div>
     </header>
@@ -425,6 +487,19 @@
     
     document.getElementById('clear-terminal').addEventListener('click', () => {
       term.clear();
+    });
+    
+    // Arrow button handlers
+    document.getElementById('arrow-up').addEventListener('click', () => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send('\x1b[A'); // Up arrow escape sequence
+      }
+    });
+    
+    document.getElementById('arrow-down').addEventListener('click', () => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send('\x1b[B'); // Down arrow escape sequence
+      }
     });
     
     // Initialize
