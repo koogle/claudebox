@@ -5,10 +5,15 @@ set -e
 
 # Parse command line arguments
 SKIP_DOCKER_CHECK=false
+FORCE_RECONFIGURE=false
 while [[ $# -gt 0 ]]; do
     case $1 in
         --skip-docker-check)
             SKIP_DOCKER_CHECK=true
+            shift
+            ;;
+        --force|-f)
+            FORCE_RECONFIGURE=true
             shift
             ;;
         --help|-h)
@@ -16,6 +21,7 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Options:"
             echo "  --skip-docker-check    Skip Docker installation verification"
+            echo "  --force, -f           Force reconfiguration of all settings"
             echo "  --help, -h            Show this help message"
             exit 0
             ;;
@@ -140,7 +146,7 @@ update_env() {
     local value=$2
     if grep -q "^${key}=" .env; then
         # Update existing
-        sed -i.bak "s|^${key}=.*|${key}=${value}|" .env && rm .env.bak
+        sed -i.bak "s|^${key}=.*|${key}=${value}|" .env && rm -f .env.bak
     else
         # Add new
         echo "${key}=${value}" >> .env
@@ -148,9 +154,12 @@ update_env() {
 }
 
 # Check if ANTHROPIC_API_KEY is already set
-if grep -q "^ANTHROPIC_API_KEY=.*[a-zA-Z0-9]" .env; then
+if grep -q "^ANTHROPIC_API_KEY=.*[a-zA-Z0-9]" .env && [ "$FORCE_RECONFIGURE" = false ]; then
     echo "✅ Anthropic API key already configured"
 else
+    if [ "$FORCE_RECONFIGURE" = true ] && grep -q "^ANTHROPIC_API_KEY=.*[a-zA-Z0-9]" .env; then
+        echo "🔄 Reconfiguring Anthropic API key (--force)"
+    fi
     echo "📝 Anthropic API Key Setup"
     echo "   Get your API key from: https://console.anthropic.com/settings/keys"
     echo ""
