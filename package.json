@@ -1,0 +1,16 @@
+{
+  "name": "claudebox",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Containerized Claude Code with web terminal interface",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "ws": "^8.16.0",
+    "node-pty": "^1.0.0"
+  }
+}
