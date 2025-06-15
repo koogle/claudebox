@@ -39,6 +39,9 @@ with open('/tmp/claude-config.json', 'w') as f:
   if [ "$USE_CLAUDE_CREDENTIALS" = "true" ] && [ -f "/app/claude-credentials.json" ]; then
     cp /app/claude-credentials.json /root/.claude/.credentials.json
     echo "Credentials copied from /app/claude-credentials.json (USE_CLAUDE_CREDENTIALS=true)"
+    # Clean up the credentials file from /app after copying
+    rm -f /app/claude-credentials.json
+    echo "Cleaned up credentials file from /app directory"
   elif [ "$USE_CLAUDE_CREDENTIALS" = "true" ]; then
     echo "Warning: USE_CLAUDE_CREDENTIALS=true but /app/claude-credentials.json not found"
   else

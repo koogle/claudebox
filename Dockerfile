@@ -25,6 +25,7 @@ RUN pnpm add -g @anthropic-ai/claude-code
 # Setup build arguments
 ARG REPO_URL
 ARG GITHUB_TOKEN
+ARG USE_CLAUDE_CREDENTIALS=false
 
 # Environment variables
 # USE_CLAUDE_CREDENTIALS: Set to "true" to use claude-credentials.json file
@@ -68,8 +69,15 @@ RUN cd node_modules/node-pty && \
 # Copy application files
 COPY . .
 
-# Make setup script executable
-RUN chmod +x /app/setup-claude-config.sh
+# Copy Claude credentials file if USE_CLAUDE_CREDENTIALS is true
+# This requires the file to be manually copied to build context first
+COPY claude-credentials.json* /app/
+
+# Make setup script executable and clean up credentials file from app directory after setup
+RUN chmod +x /app/setup-claude-config.sh && \
+    if [ "$USE_CLAUDE_CREDENTIALS" = "true" ] && [ -f "/app/claude-credentials.json" ]; then \
+        echo "Credentials file will be used during setup, then cleaned up"; \
+    fi
 
 # Expose HTTP port for web server and WebSocket port for terminal
 EXPOSE 3000 3001
