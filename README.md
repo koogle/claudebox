@@ -124,16 +124,22 @@ docker-compose up --build
 
 ## Example Configurations
 
-### Public Repository (Read-Only)
+### With Claude Credentials (Recommended)
+```env
+USE_CLAUDE_CREDENTIALS=true
+REPO_URL=https://github.com/facebook/react.git
+# No ANTHROPIC_API_KEY needed when using credentials
+```
+
+### API Key Fallback
 ```env
 ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxx
 REPO_URL=https://github.com/facebook/react.git
-# No GITHUB_TOKEN needed for public repos
 ```
 
 ### Private Repository with Push Access
 ```env
-ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxx
+USE_CLAUDE_CREDENTIALS=true
 REPO_URL=https://github.com/mycompany/private-repo.git
 GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
 ```
