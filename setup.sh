@@ -194,30 +194,64 @@ if [ -f "$CLAUDE_CONFIG_FILE" ]; then
     echo ""
 fi
 
-# Check for Claude credentials file
+# Check for Claude credentials
 CLAUDE_CREDENTIALS_FILE="$HOME/.claude/.credentials.json"
 HAVE_CREDENTIALS=false
 
-if [ -f "$CLAUDE_CREDENTIALS_FILE" ]; then
-    echo "🔑 Found Claude credentials at ~/.claude/.credentials.json"
+# Check if we're on macOS and try keychain first
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "🔍 Checking for Claude credentials in macOS keychain..."
     
-    # Check if USE_CLAUDE_CREDENTIALS is already set
-    if ! grep -q "^USE_CLAUDE_CREDENTIALS=" .env; then
-        read -p "Copy credentials to container? (Y/n): " copy_credentials
-        echo ""
+    # Try to get credentials from keychain
+    KEYCHAIN_CREDENTIALS=$(security find-generic-password -s "Claude Code-credentials" -a "$USER" -w 2>/dev/null || echo "")
+    
+    if [ -n "$KEYCHAIN_CREDENTIALS" ]; then
+        echo "🔑 Found Claude credentials in keychain"
         
-        if [[ "$copy_credentials" =~ ^[Yy]?$ ]]; then
-            update_env "USE_CLAUDE_CREDENTIALS" "true"
-        else
-            update_env "USE_CLAUDE_CREDENTIALS" "false"
+        # Check if USE_CLAUDE_CREDENTIALS is already set
+        if ! grep -q "^USE_CLAUDE_CREDENTIALS=" .env; then
+            read -p "Copy credentials from keychain to container? (Y/n): " copy_credentials
+            echo ""
+            
+            if [[ "$copy_credentials" =~ ^[Yy]?$ ]]; then
+                update_env "USE_CLAUDE_CREDENTIALS" "true"
+            else
+                update_env "USE_CLAUDE_CREDENTIALS" "false"
+            fi
         fi
+        
+        # Check env var and copy if set to true
+        if grep -q "^USE_CLAUDE_CREDENTIALS=true" .env; then
+            echo "$KEYCHAIN_CREDENTIALS" > ./claude-credentials.json
+            echo "✅ Credentials copied from keychain to container (no API key needed)"
+            HAVE_CREDENTIALS=true
+        fi
+    else
+        echo "ℹ️  No Claude credentials found in keychain"
     fi
-    
-    # Check env var and copy if set to true
-    if grep -q "^USE_CLAUDE_CREDENTIALS=true" .env; then
-        cp "$CLAUDE_CREDENTIALS_FILE" ./claude-credentials.json
-        echo "✅ Credentials will be copied to container (no API key needed)"
-        HAVE_CREDENTIALS=true
+else
+    # Non-macOS: check for credentials file
+    if [ -f "$CLAUDE_CREDENTIALS_FILE" ]; then
+        echo "🔑 Found Claude credentials at ~/.claude/.credentials.json"
+        
+        # Check if USE_CLAUDE_CREDENTIALS is already set
+        if ! grep -q "^USE_CLAUDE_CREDENTIALS=" .env; then
+            read -p "Copy credentials to container? (Y/n): " copy_credentials
+            echo ""
+            
+            if [[ "$copy_credentials" =~ ^[Yy]?$ ]]; then
+                update_env "USE_CLAUDE_CREDENTIALS" "true"
+            else
+                update_env "USE_CLAUDE_CREDENTIALS" "false"
+            fi
+        fi
+        
+        # Check env var and copy if set to true
+        if grep -q "^USE_CLAUDE_CREDENTIALS=true" .env; then
+            cp "$CLAUDE_CREDENTIALS_FILE" ./claude-credentials.json
+            echo "✅ Credentials will be copied to container (no API key needed)"
+            HAVE_CREDENTIALS=true
+        fi
     fi
 fi
 
