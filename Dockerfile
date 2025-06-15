@@ -28,6 +28,7 @@ ARG GITHUB_TOKEN
 ARG USE_CLAUDE_CREDENTIALS=false
 ARG BASIC_AUTH_USER
 ARG BASIC_AUTH_PASS
+ARG ANTHROPIC_API_KEY
 
 # Environment variables
 # USE_CLAUDE_CREDENTIALS: Set to "true" to use claude-credentials.json file
@@ -77,13 +78,16 @@ COPY . .
 # This requires the file to be manually copied to build context first
 COPY claude-credentials.json* /app/
 
-# Set build-time environment variables for runtime
+# Set build-time environment variables for runtime and setup
 ENV BASIC_AUTH_USER=${BASIC_AUTH_USER}
 ENV BASIC_AUTH_PASS=${BASIC_AUTH_PASS}
+ENV ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
 
 # Make setup script executable and run Claude configuration setup
-RUN chmod +x /app/setup-claude-config.sh && \
-    /app/setup-claude-config.sh && \
+RUN chmod +x /app/setup-claude-config.sh
+
+# Run setup script
+RUN /app/setup-claude-config.sh && \
     rm -f /app/claude-credentials.json
 
 # Expose port for HTTP + WebSocket server
