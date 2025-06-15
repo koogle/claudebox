@@ -8,19 +8,17 @@ A containerized Claude Code environment with web-based terminal streaming.
    ```bash
    ./setup.sh
    ```
+   The setup script will guide you through configuring:
+   - Anthropic API key (required)
+   - GitHub repository URL (optional)
+   - GitHub Personal Access Token (optional, for private repos)
 
-2. **Configure API key**
-   Edit `.env` and add your Anthropic API key:
-   ```
-   ANTHROPIC_API_KEY=your-api-key-here
-   ```
-
-3. **Run container**
+2. **Run container**
    ```bash
    docker-compose up --build
    ```
 
-4. **Access terminal**
+3. **Access terminal**
    Open http://localhost:3000 in your browser
 
 ## Features
