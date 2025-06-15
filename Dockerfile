@@ -11,7 +11,13 @@ RUN apt-get update && apt-get install -y \
 # Setup pnpm and install Claude Code globally
 ENV PNPM_HOME="/root/.local/share/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN pnpm setup && pnpm add -g @anthropic-ai/claude-code
+ENV SHELL="/bin/bash"
+
+# Run pnpm setup separately
+RUN pnpm setup
+
+# Install Claude Code globally
+RUN pnpm add -g @anthropic-ai/claude-code
 
 # Setup build arguments
 ARG REPO_URL
