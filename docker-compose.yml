@@ -2,18 +2,20 @@ version: '3.8'
 
 services:
   claudebox:
-    build: .
+    build:
+      context: .
+      args:
+        - REPO_URL=${REPO_URL}
+        - GITHUB_TOKEN=${GITHUB_TOKEN}
     ports:
       - "3000:3000"  # HTTP server
       - "3001:3001"  # WebSocket terminal
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - GITHUB_SSH_KEY=${GITHUB_SSH_KEY}
-      - REPO_URL=${REPO_URL}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
     volumes:
-      # Mount workspace for persistence during development
-      - ./workspace:/workspace
-      # Mount SSH keys if needed
-      - ~/.ssh:/root/.ssh:ro
+      # Don't mount workspace since it's baked into the image
+      # Uncomment below to override with local workspace for development
+      # - ./workspace:/workspace
     stdin_open: true
     tty: true

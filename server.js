@@ -17,8 +17,7 @@ app.use(express.static('public'));
 
 // Environment setup
 const CLAUDE_API_KEY = process.env.ANTHROPIC_API_KEY;
-const GITHUB_SSH_KEY = process.env.GITHUB_SSH_KEY;
-const REPO_URL = process.env.REPO_URL;
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const WORKSPACE_DIR = '/workspace';
 
 // Initialize Claude Code terminal
@@ -28,22 +27,35 @@ let claudeTerm = null;
 async function setupEnvironment() {
   console.log('Setting up environment...');
   
-  // Setup SSH key if provided
-  if (GITHUB_SSH_KEY) {
-    const fs = await import('fs');
-    fs.writeFileSync('/root/.ssh/id_rsa', GITHUB_SSH_KEY, { mode: 0o600 });
-    fs.writeFileSync('/root/.ssh/config', 'Host github.com\n  StrictHostKeyChecking no\n');
+  const fs = await import('fs');
+  
+  // Check if workspace exists and has content
+  let workspaceExists = false;
+  try {
+    const files = fs.readdirSync(WORKSPACE_DIR);
+    workspaceExists = files.length > 0;
+  } catch (error) {
+    console.log('No workspace directory found');
   }
   
-  // Clone repository if URL provided
-  if (REPO_URL) {
-    await new Promise((resolve, reject) => {
-      const git = spawn('git', ['clone', REPO_URL, WORKSPACE_DIR]);
-      git.on('close', (code) => {
-        if (code === 0) resolve();
-        else reject(new Error(`Git clone failed with code ${code}`));
+  // Configure git with token if available
+  if (GITHUB_TOKEN && workspaceExists) {
+    console.log('Configuring git authentication...');
+    try {
+      // Set up git credential helper
+      await new Promise((resolve, reject) => {
+        spawn('git', ['config', '--global', 'credential.helper', 'store'], { cwd: WORKSPACE_DIR })
+          .on('close', (code) => code === 0 ? resolve() : reject(new Error('Failed to configure git')));
       });
-    });
+      
+      // Store credentials
+      const credentialUrl = `https://${GITHUB_TOKEN}:x-oauth-basic@github.com\n`;
+      fs.writeFileSync('/root/.git-credentials', credentialUrl, { mode: 0o600 });
+      
+      console.log('Git authentication configured');
+    } catch (error) {
+      console.error('Failed to configure git auth:', error);
+    }
   }
   
   // Start Claude Code session
@@ -52,7 +64,7 @@ async function setupEnvironment() {
     name: 'xterm-color',
     cols: 80,
     rows: 24,
-    cwd: REPO_URL ? WORKSPACE_DIR : process.env.HOME,
+    cwd: workspaceExists ? WORKSPACE_DIR : process.env.HOME,
     env: {
       ...process.env,
       ANTHROPIC_API_KEY: CLAUDE_API_KEY
@@ -60,15 +72,26 @@ async function setupEnvironment() {
   });
   
   console.log('Environment setup complete');
+  console.log(`Working directory: ${workspaceExists ? WORKSPACE_DIR : process.env.HOME}`);
 }
 
 // API Routes
 app.get('/status', (req, res) => {
+  const fs = require('fs');
+  let hasRepo = false;
+  
+  try {
+    const files = fs.readdirSync(WORKSPACE_DIR);
+    hasRepo = files.length > 0;
+  } catch (error) {
+    // Workspace doesn't exist or is empty
+  }
+  
   res.json({
     ready: claudeTerm !== null,
     hasApiKey: !!CLAUDE_API_KEY,
-    hasRepo: !!REPO_URL,
-    workspace: REPO_URL ? WORKSPACE_DIR : process.env.HOME
+    hasRepo: hasRepo,
+    workspace: hasRepo ? WORKSPACE_DIR : process.env.HOME
   });
 });
 

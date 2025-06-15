@@ -144,12 +144,21 @@ fi
 update_env() {
     local key=$1
     local value=$2
-    if grep -q "^${key}=" .env; then
-        # Update existing
-        sed -i.bak "s|^${key}=.*|${key}=${value}|" .env && rm -f .env.bak
+    
+    # For multi-line values (like SSH keys), handle differently
+    if [[ "$value" == *$'\n'* ]]; then
+        # Remove existing key if present
+        sed -i.bak "/^${key}=/d" .env && rm -f .env.bak
+        # Write multi-line value with proper escaping
+        echo "${key}=\"${value}\"" >> .env
     else
-        # Add new
-        echo "${key}=${value}" >> .env
+        if grep -q "^${key}=" .env; then
+            # Update existing single-line value
+            sed -i.bak "s|^${key}=.*|${key}=${value}|" .env && rm -f .env.bak
+        else
+            # Add new single-line value
+            echo "${key}=${value}" >> .env
+        fi
     fi
 }
 
@@ -173,55 +182,57 @@ else
 fi
 
 echo ""
-echo "📝 GitHub Repository Setup (optional)"
-echo "   Leave blank to skip repository cloning"
-echo ""
 
-# Ask for repo URL
-read -p "Enter GitHub repository URL (e.g., git@github.com:user/repo.git): " repo_url
-if [ ! -z "$repo_url" ]; then
-    update_env "REPO_URL" "$repo_url"
-    echo "✅ Repository URL saved"
+# Check if we should reconfigure GitHub settings
+SHOULD_CONFIG_GITHUB=true
+if grep -q "^REPO_URL=" .env && [ "$FORCE_RECONFIGURE" = false ]; then
+    SHOULD_CONFIG_GITHUB=false
+    echo "✅ GitHub repository already configured"
+    echo "   Use --force to reconfigure"
+fi
+
+if [ "$SHOULD_CONFIG_GITHUB" = true ]; then
+    if [ "$FORCE_RECONFIGURE" = true ] && grep -q "^REPO_URL=" .env; then
+        echo "🔄 Reconfiguring GitHub settings (--force)"
+    fi
     
+    echo "📝 GitHub Repository Setup (optional)"
+    echo "   Leave blank to skip repository cloning"
     echo ""
-    echo "📝 GitHub SSH Key Setup"
-    echo "   Required for private repositories"
-    echo ""
-    
-    # Check if user wants to use existing SSH key
-    if [ -f ~/.ssh/id_rsa ]; then
-        read -p "Use existing SSH key from ~/.ssh/id_rsa? (y/n): " use_existing
-        if [[ "$use_existing" =~ ^[Yy]$ ]]; then
-            echo "✅ Will mount existing SSH directory"
-        else
+
+    # Ask for repo URL
+    read -p "Enter GitHub repository URL (e.g., https://github.com/user/repo.git): " repo_url
+    if [ ! -z "$repo_url" ]; then
+        update_env "REPO_URL" "$repo_url"
+        echo "✅ Repository URL saved"
+        
+        # Check if it's likely a private repo
+        if [[ "$repo_url" == *"private"* ]] || [[ "$repo_url" == git@* ]]; then
             echo ""
-            echo "Paste your GitHub SSH private key (press Enter twice when done):"
-            ssh_key=""
-            while IFS= read -r line; do
-                [ -z "$line" ] && break
-                ssh_key="${ssh_key}${line}\n"
-            done
-            if [ ! -z "$ssh_key" ]; then
-                # Remove trailing newline and escape for .env
-                ssh_key=$(echo -e "$ssh_key" | sed '$d')
-                update_env "GITHUB_SSH_KEY" "$ssh_key"
-                echo "✅ SSH key saved"
-            fi
+            echo "⚠️  This appears to be a private repository"
+        fi
+        
+        echo ""
+        echo "📝 GitHub Personal Access Token (optional)"
+        echo "   Required for private repositories and push access"
+        echo "   Create a token at: https://github.com/settings/tokens"
+        echo "   Select 'repo' scope for full access"
+        echo ""
+        
+        read -p "Enter GitHub Personal Access Token (or leave blank for public repos): " github_token
+        if [ ! -z "$github_token" ]; then
+            update_env "GITHUB_TOKEN" "$github_token"
+            echo "✅ GitHub token saved"
+        else
+            # Clear any existing token
+            sed -i.bak '/^GITHUB_TOKEN=/d' .env && rm -f .env.bak
+            echo "ℹ️  No token provided - will work for public repos only"
         fi
     else
-        echo ""
-        echo "Paste your GitHub SSH private key (press Enter twice when done):"
-        ssh_key=""
-        while IFS= read -r line; do
-            [ -z "$line" ] && break
-            ssh_key="${ssh_key}${line}\n"
-        done
-        if [ ! -z "$ssh_key" ]; then
-            # Remove trailing newline and escape for .env
-            ssh_key=$(echo -e "$ssh_key" | sed '$d')
-            update_env "GITHUB_SSH_KEY" "$ssh_key"
-            echo "✅ SSH key saved"
-        fi
+        # Clear GitHub settings if user leaves blank
+        sed -i.bak '/^REPO_URL=/d' .env && rm -f .env.bak
+        sed -i.bak '/^GITHUB_TOKEN=/d' .env && rm -f .env.bak
+        echo "✅ GitHub configuration cleared"
     fi
 fi
 
