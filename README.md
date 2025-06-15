@@ -11,7 +11,8 @@ A containerized Claude Code environment with web-based terminal streaming.
    ./setup.sh
    ```
    The setup script will guide you through configuring:
-   - Anthropic API key (required)
+   - Claude credentials (from keychain on macOS or ~/.claude/.credentials.json on Linux)
+   - Anthropic API key (if credentials not available)
    - GitHub repository URL (optional)
    - GitHub Personal Access Token (optional, for private repos)
 
@@ -57,9 +58,29 @@ A containerized Claude Code environment with web-based terminal streaming.
 - Revoke tokens when no longer needed
 - Never commit tokens to version control
 
+## Authentication
+
+### Claude Authentication
+
+ClaudeBox supports two authentication methods:
+
+**macOS (Keychain Integration)**
+- Automatically detects Claude credentials stored in macOS keychain
+- Looks for service: `Claude Code-.credentials` 
+- No manual file copying required
+
+**Linux/Other Platforms**
+- Uses credentials file at `~/.claude/.credentials.json`
+- Automatically copied to container during build
+
+**API Key Fallback**
+- If no credentials found, prompts for `ANTHROPIC_API_KEY`
+- Can be configured manually in `.env` file
+
 ## Environment Variables
 
-- `ANTHROPIC_API_KEY` - Your Anthropic API key (required)
+- `USE_CLAUDE_CREDENTIALS` - Set to "true" to use credentials file/keychain (auto-configured)
+- `ANTHROPIC_API_KEY` - Your Anthropic API key (fallback if no credentials)
 - `REPO_URL` - Git repository to clone on startup (optional)
   - Use HTTPS format: `https://github.com/username/repo.git`
 - `GITHUB_TOKEN` - GitHub Personal Access Token (optional)
