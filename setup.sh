@@ -1,94 +1,132 @@
 #!/bin/bash
 
+# Exit on any error
+set -e
+
+# Parse command line arguments
+SKIP_DOCKER_CHECK=false
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --skip-docker-check)
+            SKIP_DOCKER_CHECK=true
+            shift
+            ;;
+        --help|-h)
+            echo "Usage: $0 [options]"
+            echo ""
+            echo "Options:"
+            echo "  --skip-docker-check    Skip Docker installation verification"
+            echo "  --help, -h            Show this help message"
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
+done
+
 echo "🚀 ClaudeBox Setup"
 echo "=================="
 echo ""
 
-# Check if Docker is installed
-if ! command -v docker &> /dev/null; then
-    echo "❌ Docker is not installed"
-    echo ""
-    
-    # Detect OS
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        echo "📦 Docker Desktop for macOS Installation Options:"
+# Check if Docker is installed (unless skipped)
+if [ "$SKIP_DOCKER_CHECK" = false ]; then
+    if ! command -v docker &> /dev/null; then
+        echo "❌ Docker is not installed"
         echo ""
-        echo "1. Download Docker Desktop from:"
-        echo "   https://www.docker.com/products/docker-desktop/"
-        echo ""
-        echo "2. Or install via Homebrew:"
-        echo "   brew install --cask docker"
-        echo ""
-        echo "After installation, start Docker Desktop and run this script again."
-    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        if [ -f /etc/os-release ]; then
-            . /etc/os-release
-            if [[ "$ID" == "ubuntu" ]]; then
-                echo "📦 Docker Installation for Ubuntu:"
-                echo ""
-                echo "Run these commands:"
-                echo ""
-                echo "# Update package index"
-                echo "sudo apt-get update"
-                echo ""
-                echo "# Install prerequisites"
-                echo "sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common"
-                echo ""
-                echo "# Add Docker's GPG key"
-                echo "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -"
-                echo ""
-                echo "# Add Docker repository"
-                echo "sudo add-apt-repository \"deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable\""
-                echo ""
-                echo "# Install Docker"
-                echo "sudo apt-get update && sudo apt-get install -y docker-ce docker-ce-cli containerd.io"
-                echo ""
-                echo "# Install Docker Compose"
-                echo "sudo curl -L \"https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)\" -o /usr/local/bin/docker-compose"
-                echo "sudo chmod +x /usr/local/bin/docker-compose"
-                echo ""
-                echo "# Add your user to docker group (logout/login required)"
-                echo "sudo usermod -aG docker $USER"
-            else
-                echo "📦 Docker Installation:"
-                echo "Visit: https://docs.docker.com/engine/install/"
+        
+        # Detect OS
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            echo "📦 Docker Desktop for macOS Installation Options:"
+            echo ""
+            echo "1. Download Docker Desktop from:"
+            echo "   https://www.docker.com/products/docker-desktop/"
+            echo ""
+            echo "2. Or install via Homebrew:"
+            echo "   brew install --cask docker"
+            echo ""
+            echo "After installation, start Docker Desktop and run this script again."
+        elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+            if [ -f /etc/os-release ]; then
+                . /etc/os-release
+                if [[ "$ID" == "ubuntu" ]]; then
+                    echo "📦 Docker Installation for Ubuntu:"
+                    echo ""
+                    echo "Run these commands:"
+                    echo ""
+                    echo "# Update package index"
+                    echo "sudo apt-get update"
+                    echo ""
+                    echo "# Install prerequisites"
+                    echo "sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common"
+                    echo ""
+                    echo "# Add Docker's GPG key"
+                    echo "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -"
+                    echo ""
+                    echo "# Add Docker repository"
+                    echo "sudo add-apt-repository \"deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable\""
+                    echo ""
+                    echo "# Install Docker"
+                    echo "sudo apt-get update && sudo apt-get install -y docker-ce docker-ce-cli containerd.io"
+                    echo ""
+                    echo "# Install Docker Compose"
+                    echo "sudo curl -L \"https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)\" -o /usr/local/bin/docker-compose"
+                    echo "sudo chmod +x /usr/local/bin/docker-compose"
+                    echo ""
+                    echo "# Add your user to docker group (logout/login required)"
+                    echo "sudo usermod -aG docker \$USER"
+                else
+                    echo "📦 Docker Installation:"
+                    echo "Visit: https://docs.docker.com/engine/install/"
+                fi
             fi
+        else
+            echo "📦 Docker Installation:"
+            echo "Visit: https://docs.docker.com/engine/install/"
         fi
-    else
-        echo "📦 Docker Installation:"
-        echo "Visit: https://docs.docker.com/engine/install/"
+        echo ""
+        echo "To skip Docker checks, run: $0 --skip-docker-check"
+        exit 1
     fi
-    exit 1
+
+    # Check if docker-compose is installed
+    if ! command -v docker-compose &> /dev/null; then
+        echo "❌ Docker Compose is not installed"
+        echo ""
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            echo "Docker Compose should be included with Docker Desktop."
+            echo "Make sure Docker Desktop is running."
+        else
+            echo "Install Docker Compose:"
+            echo "sudo curl -L \"https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)\" -o /usr/local/bin/docker-compose"
+            echo "sudo chmod +x /usr/local/bin/docker-compose"
+        fi
+        echo ""
+        echo "To skip Docker checks, run: $0 --skip-docker-check"
+        exit 1
+    fi
+
+    # Check if Docker daemon is running
+    if ! docker info &> /dev/null; then
+        echo "❌ Docker daemon is not running"
+        echo ""
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            echo "Please start Docker Desktop from Applications"
+        else
+            echo "Please start Docker daemon: sudo systemctl start docker"
+        fi
+        echo ""
+        echo "To skip Docker checks, run: $0 --skip-docker-check"
+        exit 1
+    fi
+
+    echo "✅ Docker is installed and running"
+else
+    echo "⚠️  Skipping Docker verification (--skip-docker-check)"
 fi
 
-# Check if docker-compose is installed
-if ! command -v docker-compose &> /dev/null; then
-    echo "❌ Docker Compose is not installed"
-    echo ""
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        echo "Docker Compose should be included with Docker Desktop."
-        echo "Make sure Docker Desktop is running."
-    else
-        echo "Install Docker Compose:"
-        echo "sudo curl -L \"https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)\" -o /usr/local/bin/docker-compose"
-        echo "sudo chmod +x /usr/local/bin/docker-compose"
-    fi
-    exit 1
-fi
-
-# Check if Docker daemon is running
-if ! docker info &> /dev/null; then
-    echo "❌ Docker daemon is not running"
-    echo ""
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        echo "Please start Docker Desktop from Applications"
-    else
-        echo "Please start Docker daemon: sudo systemctl start docker"
-    fi
-    exit 1
-fi
-
-echo "✅ Docker is installed and running"
 echo ""
 
 # Create .env if it doesn't exist
