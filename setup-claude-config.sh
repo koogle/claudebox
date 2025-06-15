@@ -27,42 +27,6 @@ with open('/tmp/claude-config.json', 'w') as f:
 "
   fi
   
-  # Merge OAuth config if present
-  # if [ -f "/app/claude-oauth-config.json" ]; then
-  #   echo "Merging OAuth configuration..."
-  #   python3 -c "
-  # import json
-  # with open('/tmp/claude-config.json', 'r') as f:
-  #     config = json.load(f)
-  # with open('/app/claude-oauth-config.json', 'r') as f:
-  #     oauth = json.load(f)
-  # config['oauthAccount'] = oauth
-  # with open('/tmp/claude-config.json', 'w') as f:
-  #     json.dump(config, f, indent=2)
-  # "
-  # fi
-  
-  # Merge custom API key responses if present
-  # if [ -f "/app/claude-api-responses.json" ]; then
-  #   echo "Merging API key responses configuration..."
-  #   python3 -c "
-  # import json
-  # with open('/tmp/claude-config.json', 'r') as f:
-  #     config = json.load(f)
-  # with open('/app/claude-api-responses.json', 'r') as f:
-  #     responses = json.load(f)
-  # config['customApiKeyResponses'] = responses
-  # # If we have API key, ensure it's in the approved list
-  # if 'primaryApiKey' in config and config['primaryApiKey']:
-  #     suffix = config['primaryApiKey'][-20:]
-  #     if 'approved' not in config['customApiKeyResponses']:
-  #         config['customApiKeyResponses']['approved'] = []
-  #     if suffix not in config['customApiKeyResponses']['approved']:
-  #         config['customApiKeyResponses']['approved'].append(suffix)
-  # with open('/tmp/claude-config.json', 'w') as f:
-  #     json.dump(config, f, indent=2)
-  # "
-  # fi
   
   # Move the final config to the correct location
   mv /tmp/claude-config.json /root/.claude.json

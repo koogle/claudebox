@@ -190,26 +190,6 @@ if [ -f "$CLAUDE_CONFIG_FILE" ]; then
         echo "   OAuth Account: $OAUTH_EMAIL"
     fi
     
-    # Extract OAuth config if present
-    # if [ "$CLAUDE_HAS_OAUTH" = "yes" ]; then
-    #     # Extract the oauthAccount block as JSON
-    #     OAUTH_CONFIG=$(python3 -c "import json; data=json.load(open('$CLAUDE_CONFIG_FILE')); print(json.dumps(data.get('oauthAccount', {})))" 2>/dev/null || echo "{}")
-    #     # Save OAuth config to a temporary file
-    #     echo "$OAUTH_CONFIG" > ./claude-oauth-config.json
-    #     echo "   ✅ Using OAuth configuration"
-    #     
-    #     # Always extract customApiKeyResponses when using OAuth
-    #     CUSTOM_API_RESPONSES=$(python3 -c "import json; data=json.load(open('$CLAUDE_CONFIG_FILE')); print(json.dumps(data.get('customApiKeyResponses', {'approved': [], 'rejected': []})))" 2>/dev/null || echo '{"approved": [], "rejected": []}')
-    #     echo "$CUSTOM_API_RESPONSES" > ./claude-api-responses.json
-    #     echo "   ✅ Using API key responses configuration"
-    # else
-    #     # Extract customApiKeyResponses even without OAuth if present
-    #     CUSTOM_API_RESPONSES=$(python3 -c "import json; data=json.load(open('$CLAUDE_CONFIG_FILE')); print(json.dumps(data.get('customApiKeyResponses', {})))" 2>/dev/null || echo "{}")
-    #     if [ "$CUSTOM_API_RESPONSES" != "{}" ]; then
-    #         echo "$CUSTOM_API_RESPONSES" > ./claude-api-responses.json
-    #         echo "   ✅ Using API key responses configuration"
-    #     fi
-    # fi
     
     echo ""
 fi
