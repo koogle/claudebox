@@ -56,7 +56,11 @@ RUN cd node_modules/node-pty && \
 # Copy application files
 COPY . .
 
+# Make setup script executable
+RUN chmod +x /app/setup-claude-config.sh
+
 # Expose HTTP port for web server and WebSocket port for terminal
 EXPOSE 3000 3001
 
-CMD ["node", "server.js"]
+# Run setup script before starting server
+CMD ["/bin/sh", "-c", "/app/setup-claude-config.sh && node server.js"]

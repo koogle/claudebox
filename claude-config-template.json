@@ -1,0 +1,41 @@
+{
+  "numStartups": 1,
+  "customApiKeyResponses": {
+    "approved": [
+      "__API_KEY_SUFFIX__"
+    ],
+    "rejected": []
+  },
+  "tipsHistory": {
+    "new-user-warmup": 1
+  },
+  "projects": {
+    "/workspace": {
+      "allowedTools": [],
+      "history": [],
+      "mcpContextUris": [],
+      "mcpServers": {},
+      "enabledMcpjsonServers": [],
+      "disabledMcpjsonServers": [],
+      "hasTrustDialogAccepted": true,
+      "projectOnboardingSeenCount": 1,
+      "hasClaudeMdExternalIncludesApproved": false,
+      "hasClaudeMdExternalIncludesWarningShown": false,
+      "lastCost": 0,
+      "lastAPIDuration": 0,
+      "lastDuration": 0,
+      "lastLinesAdded": 0,
+      "lastLinesRemoved": 0,
+      "lastTotalInputTokens": 0,
+      "lastTotalOutputTokens": 0,
+      "lastTotalCacheCreationInputTokens": 0,
+      "lastTotalCacheReadInputTokens": 0
+    }
+  },
+  "primaryApiKey": "__API_KEY__",
+  "isQualifiedForDataSharing": false,
+  "hasCompletedOnboarding": true,
+  "recommendedSubscription": "",
+  "subscriptionNoticeCount": 0,
+  "hasAvailableSubscription": false
+}

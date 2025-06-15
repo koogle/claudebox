@@ -25,9 +25,13 @@ A containerized Claude Code environment with web-based terminal streaming.
 
 - Live terminal streaming using xterm.js and WebSockets
 - Claude Code pre-installed and configured
+- Automatic Claude process restart on exit
+- Full terminal output buffering and replay for new connections
 - Git operations (commit, push, pull, revert) via web UI
 - Auto-clone repository on startup (optional)
 - GitHub Personal Access Token support for secure operations
+- Real-time status indicators for API key, repository, and connection
+- Native node-pty compilation for optimal performance
 
 ## GitHub Setup
 
@@ -67,6 +71,8 @@ A containerized Claude Code environment with web-based terminal streaming.
 - **Terminal**: xterm.js + WebSocket streaming
 - **Container**: Docker with pnpm package manager
 - **Ports**: 3000 (HTTP), 3001 (WebSocket)
+- **Process Management**: Automatic Claude process restart on exit
+- **Build Tools**: Includes Python 3, make, and build-essential for native modules
 
 ## Commands
 
