@@ -50,7 +50,8 @@ RUN pnpm install
 # Build node-pty native modules
 RUN cd node_modules/node-pty && \
     npm install && \
-    npm run build
+    npm run build && \
+    cd ../..
 
 # Copy application files
 COPY . .

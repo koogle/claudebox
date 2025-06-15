@@ -133,7 +133,6 @@ else
     echo "⚠️  Skipping Docker verification (--skip-docker-check)"
 fi
 
-echo ""
 
 # Create .env if it doesn't exist
 if [ ! -f .env ]; then
@@ -181,7 +180,6 @@ else
     echo "✅ API key saved"
 fi
 
-echo ""
 
 # Check if we should reconfigure GitHub settings
 SHOULD_CONFIG_GITHUB=true
@@ -236,7 +234,6 @@ if [ "$SHOULD_CONFIG_GITHUB" = true ]; then
     fi
 fi
 
-echo ""
 echo "✅ Configuration complete!"
 echo ""
 echo "Building and starting ClaudeBox..."
