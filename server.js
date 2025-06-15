@@ -44,6 +44,7 @@ async function setupEnvironment() {
   // Configure git
   console.log('Configuring git...');
   console.log(`Git user: ${GIT_USER_NAME} <${GIT_USER_EMAIL}>`);
+  console.log(`GitHub token: ${GITHUB_TOKEN ? `${GITHUB_TOKEN.substring(0, 10)}...` : 'not set'}`);
   try {
     // Set git user config
     await new Promise((resolve, reject) => {
@@ -64,8 +65,9 @@ async function setupEnvironment() {
           .on('close', (code) => code === 0 ? resolve() : reject(new Error('Failed to configure git')));
       });
       
-      // Store credentials
-      const credentialUrl = `https://${GITHUB_TOKEN}:x-oauth-basic@github.com\n`;
+      // Store credentials using the new GitHub token format
+      // Format: https://username:token@github.com
+      const credentialUrl = `https://x-access-token:${GITHUB_TOKEN}@github.com\n`;
       fs.writeFileSync('/root/.git-credentials', credentialUrl, { mode: 0o600 });
       
       console.log('Git authentication configured');
@@ -242,6 +244,7 @@ app.post('/git/:command', express.json(), async (req, res) => {
       case 'push':
         // Try to push to origin main/master
         gitArgs.push('push', 'origin', 'HEAD');
+        console.log(`Git push with GITHUB_TOKEN: ${GITHUB_TOKEN ? 'present' : 'not set'}`);
         break;
       case 'pull':
         gitArgs.push('pull');
@@ -284,6 +287,60 @@ app.post('/git/:command', express.json(), async (req, res) => {
     }
     
     console.log(`Executing git command: git ${gitArgs.join(' ')} in ${gitWorkDir}`);
+    
+    // For push commands, ensure remote URL is HTTPS if we have a token
+    if (command === 'push' && GITHUB_TOKEN) {
+      // Check current remote URL
+      const remoteCheck = spawn('git', ['remote', 'get-url', 'origin'], { cwd: gitWorkDir });
+      let remoteUrl = '';
+      
+      remoteCheck.stdout.on('data', (data) => {
+        remoteUrl = data.toString().trim();
+        console.log(`Current remote URL: ${remoteUrl}`);
+      });
+      
+      await new Promise((resolve) => {
+        remoteCheck.on('close', (code) => {
+          if (code === 0 && remoteUrl.startsWith('git@github.com:')) {
+            // Convert SSH URL to HTTPS and ensure .git suffix
+            let httpsUrl = remoteUrl.replace('git@github.com:', 'https://github.com/');
+            if (!httpsUrl.endsWith('.git')) {
+              httpsUrl += '.git';
+            }
+            console.log(`Converting SSH URL to HTTPS: ${httpsUrl}`);
+            
+            // Update remote URL to HTTPS
+            const setUrl = spawn('git', ['remote', 'set-url', 'origin', httpsUrl], { cwd: gitWorkDir });
+            setUrl.on('close', (setCode) => {
+              if (setCode === 0) {
+                console.log('Remote URL updated to HTTPS for token authentication');
+              } else {
+                console.error('Failed to update remote URL');
+              }
+              resolve();
+            });
+          } else if (code === 0 && remoteUrl.startsWith('https://github.com/') && !remoteUrl.endsWith('.git')) {
+            // Ensure HTTPS URL ends with .git
+            const correctedUrl = remoteUrl + '.git';
+            console.log(`Adding .git suffix to URL: ${correctedUrl}`);
+            
+            // Update remote URL to include .git
+            const setUrl = spawn('git', ['remote', 'set-url', 'origin', correctedUrl], { cwd: gitWorkDir });
+            setUrl.on('close', (setCode) => {
+              if (setCode === 0) {
+                console.log('Remote URL corrected with .git suffix');
+              } else {
+                console.error('Failed to update remote URL');
+              }
+              resolve();
+            });
+          } else {
+            console.log(`Remote URL is already correct: ${remoteUrl}`);
+            resolve();
+          }
+        });
+      });
+    }
     
     const git = spawn('git', gitArgs, { cwd: gitWorkDir });
     let stdout = '';

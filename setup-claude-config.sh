@@ -32,11 +32,17 @@ with open('/tmp/claude-config.json', 'w') as f:
   mv /tmp/claude-config.json /root/.claude.json
   echo "Claude configuration created at /root/.claude.json"
   
-  # Copy credentials file if present
-  if [ -f "/app/claude-credentials.json" ]; then
-    mkdir -p /root/.claude
+  # Setup credentials file if enabled
+  mkdir -p /root/.claude
+  
+  # Check if we should use the credentials file
+  if [ "$USE_CLAUDE_CREDENTIALS" = "true" ] && [ -f "/app/claude-credentials.json" ]; then
     cp /app/claude-credentials.json /root/.claude/.credentials.json
-    echo "Credentials copied to /root/.claude/.credentials.json"
+    echo "Credentials copied from /app/claude-credentials.json (USE_CLAUDE_CREDENTIALS=true)"
+  elif [ "$USE_CLAUDE_CREDENTIALS" = "true" ]; then
+    echo "Warning: USE_CLAUDE_CREDENTIALS=true but /app/claude-credentials.json not found"
+  else
+    echo "Claude credentials file not used (USE_CLAUDE_CREDENTIALS not set to true)"
   fi
 else
   echo "No Claude configuration template found"

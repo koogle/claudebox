@@ -26,18 +26,30 @@ RUN pnpm add -g @anthropic-ai/claude-code
 ARG REPO_URL
 ARG GITHUB_TOKEN
 
+# Environment variables
+# USE_CLAUDE_CREDENTIALS: Set to "true" to use claude-credentials.json file
+# ANTHROPIC_API_KEY: API key for Claude
+# GITHUB_TOKEN: GitHub token for git operations
+
 # Create workspace directory
 RUN mkdir -p /workspace
 
 # Clone repository if URL provided
 RUN if [ -n "$REPO_URL" ]; then \
+    # Ensure URL ends with .git if it's a GitHub URL
+    CLONE_URL="$REPO_URL"; \
+    if echo "$REPO_URL" | grep -q "github.com" && ! echo "$REPO_URL" | grep -q "\.git$"; then \
+        CLONE_URL="${REPO_URL}.git"; \
+    fi; \
     if [ -n "$GITHUB_TOKEN" ]; then \
-        # Extract repo path from URL (works with both https and git@ URLs)
-        REPO_PATH=$(echo $REPO_URL | sed -e 's/.*github.com[:/]\(.*\)\.git$/\1/' -e 's/.*github.com[:/]\(.*\)$/\1/'); \
-        git clone https://${GITHUB_TOKEN}@github.com/${REPO_PATH}.git /workspace && echo "Repository cloned successfully" || exit 1; \
+        # Set up git credentials first
+        git config --global credential.helper store && \
+        echo "https://x-access-token:${GITHUB_TOKEN}@github.com" > /root/.git-credentials && \
+        # Clone using the corrected URL (credentials will be used automatically)
+        git clone $CLONE_URL /workspace && echo "Repository cloned successfully" || exit 1; \
     else \
         # Try cloning without auth (for public repos)
-        git clone $REPO_URL /workspace && echo "Repository cloned successfully" || exit 1; \
+        git clone $CLONE_URL /workspace && echo "Repository cloned successfully" || exit 1; \
     fi; \
 fi
 
