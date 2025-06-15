@@ -134,6 +134,20 @@ else
 fi
 
 
+# Get git configuration from host
+GIT_USER_NAME=$(git config --global user.name 2>/dev/null || echo "")
+GIT_USER_EMAIL=$(git config --global user.email 2>/dev/null || echo "")
+
+echo ""
+if [ -n "$GIT_USER_NAME" ] && [ -n "$GIT_USER_EMAIL" ]; then
+    echo "📧 Found git configuration:"
+    echo "   Name: $GIT_USER_NAME"
+    echo "   Email: $GIT_USER_EMAIL"
+else
+    echo "📧 No git configuration found on host"
+    echo "   Will use default: ClaudeBox <claude@claudebox.local>"
+fi
+
 # Create .env if it doesn't exist
 if [ ! -f .env ]; then
     touch .env
