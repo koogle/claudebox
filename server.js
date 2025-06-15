@@ -43,15 +43,16 @@ async function setupEnvironment() {
   
   // Configure git
   console.log('Configuring git...');
+  console.log(`Git user: ${GIT_USER_NAME} <${GIT_USER_EMAIL}>`);
   try {
     // Set git user config
     await new Promise((resolve, reject) => {
-      spawn('git', ['config', '--global', 'user.email', 'claude@claudebox.local'])
+      spawn('git', ['config', '--global', 'user.email', GIT_USER_EMAIL])
         .on('close', (code) => code === 0 ? resolve() : reject(new Error('Failed to configure git email')));
     });
     
     await new Promise((resolve, reject) => {
-      spawn('git', ['config', '--global', 'user.name', 'Claude'])
+      spawn('git', ['config', '--global', 'user.name', GIT_USER_NAME])
         .on('close', (code) => code === 0 ? resolve() : reject(new Error('Failed to configure git name')));
     });
     
