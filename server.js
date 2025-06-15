@@ -212,7 +212,7 @@ app.get('/git/stats', async (req, res) => {
 
 app.post('/git/:command', express.json(), async (req, res) => {
   const { command } = req.params;
-  const validCommands = ['commit', 'push', 'pull', 'revert'];
+  const validCommands = ['commit', 'push', 'pull', 'reset'];
   
   if (!validCommands.includes(command)) {
     return res.status(400).json({ error: 'Invalid git command' });
@@ -240,13 +240,14 @@ app.post('/git/:command', express.json(), async (req, res) => {
         gitArgs.push('&&', 'git', 'commit', '-m', message);
         break;
       case 'push':
-        gitArgs.push('push');
+        // Try to push to origin main/master
+        gitArgs.push('push', 'origin', 'HEAD');
         break;
       case 'pull':
         gitArgs.push('pull');
         break;
-      case 'revert':
-        gitArgs.push('revert', 'HEAD', '--no-edit');
+      case 'reset':
+        gitArgs.push('reset', '--hard', 'HEAD');
         break;
     }
     
@@ -254,26 +255,62 @@ app.post('/git/:command', express.json(), async (req, res) => {
     if (command === 'commit') {
       const { message } = req.body;
       // First add all files
+      console.log(`Executing git add -A in ${gitWorkDir}`);
       const addCmd = spawn('git', ['add', '-A'], { cwd: gitWorkDir });
-      await new Promise((resolve) => {
+      
+      let addStderr = '';
+      addCmd.stderr.on('data', (data) => {
+        addStderr += data;
+        console.error(`Git add stderr: ${data}`);
+      });
+      
+      const addExitCode = await new Promise((resolve) => {
         addCmd.on('close', resolve);
       });
+      
+      if (addExitCode !== 0) {
+        console.error(`Git add failed with code ${addExitCode}: ${addStderr}`);
+        return res.status(500).json({ 
+          error: 'Git add failed', 
+          output: addStderr,
+          command: 'git add -A',
+          workDir: gitWorkDir
+        });
+      }
+      
       // Then commit
       gitArgs.length = 0;
       gitArgs.push('commit', '-m', message);
     }
     
-    const git = spawn('git', gitArgs, { cwd: gitWorkDir });
-    let output = '';
+    console.log(`Executing git command: git ${gitArgs.join(' ')} in ${gitWorkDir}`);
     
-    git.stdout.on('data', (data) => { output += data; });
-    git.stderr.on('data', (data) => { output += data; });
+    const git = spawn('git', gitArgs, { cwd: gitWorkDir });
+    let stdout = '';
+    let stderr = '';
+    
+    git.stdout.on('data', (data) => { 
+      stdout += data;
+      console.log(`Git stdout: ${data}`);
+    });
+    
+    git.stderr.on('data', (data) => { 
+      stderr += data;
+      console.error(`Git stderr: ${data}`);
+    });
     
     git.on('close', (code) => {
+      console.log(`Git command exited with code ${code}`);
       if (code === 0) {
-        res.json({ success: true, output });
+        res.json({ success: true, output: stdout || 'Command completed successfully' });
       } else {
-        res.status(500).json({ error: 'Git command failed', output });
+        console.error(`Git command failed: ${stderr || stdout}`);
+        res.status(500).json({ 
+          error: 'Git command failed', 
+          output: stderr || stdout,
+          command: `git ${gitArgs.join(' ')}`,
+          workDir: gitWorkDir
+        });
       }
     });
   } catch (error) {

@@ -175,23 +175,85 @@ update_env() {
     fi
 }
 
-# Check if ANTHROPIC_API_KEY is already set
-if grep -q "^ANTHROPIC_API_KEY=.*[a-zA-Z0-9]" .env && [ "$FORCE_RECONFIGURE" = false ]; then
-    echo "✅ Anthropic API key already configured"
-else
-    if [ "$FORCE_RECONFIGURE" = true ] && grep -q "^ANTHROPIC_API_KEY=.*[a-zA-Z0-9]" .env; then
-        echo "🔄 Reconfiguring Anthropic API key (--force)"
+# Check for local Claude configuration
+CLAUDE_CONFIG_FILE="$HOME/.claude.json"
+
+if [ -f "$CLAUDE_CONFIG_FILE" ]; then
+    echo "🔍 Found Claude configuration at ~/.claude.json"
+    
+    # Check what type of configuration we have
+    CLAUDE_HAS_OAUTH=$(python3 -c "import json; data=json.load(open('$CLAUDE_CONFIG_FILE')); print('yes' if 'oauthAccount' in data else 'no')" 2>/dev/null || echo "no")
+    
+    # Show what we found
+    if [ "$CLAUDE_HAS_OAUTH" = "yes" ]; then
+        OAUTH_EMAIL=$(python3 -c "import json; data=json.load(open('$CLAUDE_CONFIG_FILE')); print(data.get('oauthAccount', {}).get('emailAddress', 'Unknown'))" 2>/dev/null || echo "Unknown")
+        echo "   OAuth Account: $OAUTH_EMAIL"
     fi
-    echo "📝 Anthropic API Key Setup"
-    echo "   Get your API key from: https://console.anthropic.com/settings/keys"
+    
+    # Extract OAuth config if present
+    if [ "$CLAUDE_HAS_OAUTH" = "yes" ]; then
+        # Extract the oauthAccount block as JSON
+        OAUTH_CONFIG=$(python3 -c "import json; data=json.load(open('$CLAUDE_CONFIG_FILE')); print(json.dumps(data.get('oauthAccount', {})))" 2>/dev/null || echo "{}")
+        # Save OAuth config to a temporary file
+        echo "$OAUTH_CONFIG" > ./claude-oauth-config.json
+        echo "   ✅ Using OAuth configuration"
+        
+        # Always extract customApiKeyResponses when using OAuth
+        CUSTOM_API_RESPONSES=$(python3 -c "import json; data=json.load(open('$CLAUDE_CONFIG_FILE')); print(json.dumps(data.get('customApiKeyResponses', {'approved': [], 'rejected': []})))" 2>/dev/null || echo '{"approved": [], "rejected": []}')
+        echo "$CUSTOM_API_RESPONSES" > ./claude-api-responses.json
+        echo "   ✅ Using API key responses configuration"
+    else
+        # Extract customApiKeyResponses even without OAuth if present
+        CUSTOM_API_RESPONSES=$(python3 -c "import json; data=json.load(open('$CLAUDE_CONFIG_FILE')); print(json.dumps(data.get('customApiKeyResponses', {})))" 2>/dev/null || echo "{}")
+        if [ "$CUSTOM_API_RESPONSES" != "{}" ]; then
+            echo "$CUSTOM_API_RESPONSES" > ./claude-api-responses.json
+            echo "   ✅ Using API key responses configuration"
+        fi
+    fi
+    
     echo ""
-    read -p "Enter your Anthropic API key: " api_key
-    if [ -z "$api_key" ]; then
-        echo "❌ API key is required to continue"
-        exit 1
+fi
+
+# Check for Claude credentials file
+CLAUDE_CREDENTIALS_FILE="$HOME/.claude/.credentials.json"
+if [ -f "$CLAUDE_CREDENTIALS_FILE" ]; then
+    echo "🔑 Found Claude credentials at ~/.claude/.credentials.json"
+    read -p "Copy credentials to container? (Y/n): " copy_credentials
+    echo ""
+    
+    if [[ "$copy_credentials" =~ ^[Yy]?$ ]]; then
+        cp "$CLAUDE_CREDENTIALS_FILE" ./claude-credentials.json
+        echo "✅ Credentials will be copied to container"
     fi
-    update_env "ANTHROPIC_API_KEY" "$api_key"
-    echo "✅ API key saved"
+fi
+
+# Check if we need API key (not needed if we have OAuth)
+NEED_API_KEY=true
+if [ -f "./claude-oauth-config.json" ]; then
+    # We have OAuth config, no API key needed
+    NEED_API_KEY=false
+    echo "✅ Using OAuth authentication (no API key needed)"
+fi
+
+if [ "$NEED_API_KEY" = true ]; then
+    # Only check for API key if OAuth is not present
+    if grep -q "^ANTHROPIC_API_KEY=.*[a-zA-Z0-9]" .env && [ "$FORCE_RECONFIGURE" = false ]; then
+        echo "✅ Anthropic API key already configured"
+    else
+        if [ "$FORCE_RECONFIGURE" = true ] && grep -q "^ANTHROPIC_API_KEY=.*[a-zA-Z0-9]" .env; then
+            echo "🔄 Reconfiguring Anthropic API key (--force)"
+        fi
+        echo "📝 Anthropic API Key Setup"
+        echo "   Get your API key from: https://console.anthropic.com/settings/keys"
+        echo ""
+        read -p "Enter your Anthropic API key: " api_key
+        if [ -z "$api_key" ]; then
+            echo "❌ API key is required to continue"
+            exit 1
+        fi
+        update_env "ANTHROPIC_API_KEY" "$api_key"
+        echo "✅ API key saved"
+    fi
 fi
 
 
@@ -269,3 +331,6 @@ echo "Commands:"
 echo "  docker-compose logs -f     # View logs"
 echo "  docker-compose down        # Stop container"
 echo "  docker-compose restart     # Restart container"
+
+# Clean up temporary config files
+rm -f ./claude-oauth-config.json ./claude-api-responses.json ./claude-credentials.json 2>/dev/null

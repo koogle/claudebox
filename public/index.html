@@ -155,7 +155,7 @@
       <button id="git-commit">Git Commit</button>
       <button id="git-push">Git Push</button>
       <button id="git-pull">Git Pull</button>
-      <button id="git-revert">Git Revert</button>
+      <button id="git-revert">Git Reset</button>
       <button id="clear-terminal">Clear Terminal</button>
     </div>
     
@@ -315,8 +315,8 @@
     });
     
     document.getElementById('git-revert').addEventListener('click', () => {
-      if (confirm('Are you sure you want to revert the last commit?')) {
-        executeGitCommand('revert');
+      if (confirm('Are you sure you want to reset all changes? This will discard all uncommitted changes!')) {
+        executeGitCommand('reset');
       }
     });
     
