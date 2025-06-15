@@ -2,6 +2,8 @@
 
 A containerized Claude Code environment with web-based terminal streaming.
 
+<img width="1457" alt="Screenshot 2025-06-14 at 11 36 07 PM" src="https://github.com/user-attachments/assets/21a8dacf-4574-434e-964a-f4d42db870ed" />
+
 ## Quick Start
 
 1. **Setup environment**
