@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   claudebox:
     build:
@@ -13,9 +11,9 @@ services:
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - GITHUB_TOKEN=${GITHUB_TOKEN}
-    volumes:
-      # Don't mount workspace since it's baked into the image
-      # Uncomment below to override with local workspace for development
-      # - ./workspace:/workspace
+    # volumes:
+    #   # Don't mount workspace since it's baked into the image
+    #   # Uncomment below to override with local workspace for development
+    #   - ./workspace:/workspace
     stdin_open: true
     tty: true

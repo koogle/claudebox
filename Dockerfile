@@ -8,8 +8,10 @@ RUN apt-get update && apt-get install -y \
     && corepack enable \
     && corepack prepare pnpm@latest --activate
 
-# Install Claude Code globally with pnpm
-RUN pnpm add -g @anthropic-ai/claude-code
+# Setup pnpm and install Claude Code globally
+ENV PNPM_HOME="/root/.local/share/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN pnpm setup && pnpm add -g @anthropic-ai/claude-code
 
 # Setup build arguments
 ARG REPO_URL
